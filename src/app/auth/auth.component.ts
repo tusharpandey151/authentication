@@ -1,6 +1,8 @@
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { AuthService } from './auth.service';
+import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
+import { AuthResponseData, AuthService } from './auth.service';
 
 @Component({
   selector: 'app-auth',
@@ -12,9 +14,11 @@ export class AuthComponent {
   isLoading = false;
   error : string = null;
 
+  authObservable: Observable<AuthResponseData>;
+
   @ViewChild('authForm', {static:true}) authForm: NgForm;
 
-  constructor( private authService: AuthService) {
+  constructor( private authService: AuthService, private router: Router) {
 
   }
   onSwitchMode() {
@@ -30,20 +34,26 @@ export class AuthComponent {
 
     this.isLoading = true;
     if(this.isLoginMode) {
-
+      this.authObservable = this.authService.login(email, password)
     }
     else {
-      this.authService.signup(email, password).subscribe(responseData=> {
-        console.log(responseData);
-        this.isLoading=false;
-      },
-      error=> {
-        this.error = "An Error Occurred";
-        this.isLoading = false
-      })
+      this.authObservable = this.authService.signup(email, password)
     }
+    this.authObservable.subscribe(responseData=> {
+      console.log(responseData);
+      this.router.navigate(['/recipes']);
+      this.isLoading=false;
+    },
+    errorResponse=> {
+      this.error = errorResponse;
+      this.isLoading = false
+    });
 
     this.authForm.reset;
+  }
+
+  alertClose() {
+    this.error=null;
   }
 
 }
